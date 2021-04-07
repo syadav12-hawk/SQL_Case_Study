@@ -171,11 +171,67 @@ QUESTIONS:
 The output of facility name and total revenue, sorted by revenue. Remember
 that there's a different cost for guests and members! */
 
+
+with engine.connect() as con:
+    rs=con.execute(
+"""SELECT ft.name,ft.revenue
+FROM (SELECT sub.name,
+    SUM(cost) AS revenue
+FROM Bookings as b 
+LEFT JOIN (SELECT b.bookid,f.name,
+    CASE WHEN b.memid =0
+    THEN f.guestcost * b.slots
+    ELSE f.membercost * b.slots
+    END AS cost
+FROM Bookings as b
+LEFT JOIN Facilities AS f ON b.facid = f.facid) AS sub
+ON b.bookid=sub.bookid
+GROUP BY sub.name) AS ft
+WHERE ft.revenue<1000""")
+    df=pd.DataFrame(rs.fetchall())
+    df.columns=rs.keys()
+    
+
+
 /* Q11: Produce a report of members and who recommended them in alphabetic surname,firstname order */
+
+
+with engine.connect() as con:
+    rs=con.execute(
+"""SELECT m2.surname, m2.firstname
+FROM Members AS m1
+INNER JOIN Members AS m2 ON m1.memid = m2.recommendedby""")
+    df1=pd.DataFrame(rs.fetchall())
+    df1.columns=rs.keys()
+
 
 
 /* Q12: Find the facilities with their usage by member, but not guests */
 
+with engine.connect() as con:
+    rs=con.execute(
+"""SELECT DISTINCT f.name,COUNT(b.memid) AS count
+FROM Bookings AS b
+LEFT JOIN Facilities AS f ON b.facid = f.facid
+WHERE f.facid <>0
+GROUP BY f.name""")
+    df2=pd.DataFrame(rs.fetchall())
+    df2.columns=rs.keys()
+
 
 /* Q13: Find the facilities usage by month, but not guests */
+
+
+with engine.connect() as con:
+    rs=con.execute(
+"""SELECT DISTINCT f.name, strftime('%m',starttime) AS
+mon , COUNT( b.memid ) AS count
+FROM Bookings AS b
+LEFT JOIN Facilities AS f ON b.facid = f.facid
+WHERE f.facid <>0
+GROUP BY f.name, strftime('%m',starttime)
+ORDER BY mon""")
+    df3=pd.DataFrame(rs.fetchall())
+    df3.columns=rs.keys()
+
 
