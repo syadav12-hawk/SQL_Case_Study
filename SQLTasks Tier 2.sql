@@ -118,8 +118,47 @@ the guest user's ID is always 0. Include in your output the name of the
 facility, the name of the member formatted as a single column, and the cost.
 Order by descending cost, and do not use any subqueries. */
 
+SELECT f.name, CONCAT( m.firstname, " ", m.surname ) ,
+CASE WHEN b.memid =0
+THEN f.guestcost * b.slots
+ELSE f.membercost * b.slots
+END AS cost
+FROM Bookings AS b
+LEFT JOIN Facilities AS f ON b.facid = f.facid
+LEFT JOIN Members AS m ON b.memid = m.memid
+WHERE '2012-09-14' = CAST( b.starttime AS DATE )
+AND (
+(
+b.memid =0
+AND f.guestcost * b.slots >30
+)
+OR (
+b.memid <>0
+AND f.membercost * b.slots >30
+)
+)
+ORDER BY cost DESC
+LIMIT 0 , 30
+
 
 /* Q9: This time, produce the same result as in Q8, but using a subquery. */
+
+SELECT subquery.name,subquery.fullname,subquery.cost
+FROM Bookings AS b
+LEFT JOIN (
+    SELECT b.bookid AS id,f.name, 
+    CONCAT( m.firstname," ",m.surname ) AS fullname,
+    CASE WHEN b.memid =0
+    THEN f.guestcost * b.slots
+    ELSE f.membercost * b.slots
+    END AS cost
+    FROM Bookings AS b
+    LEFT JOIN Facilities AS f ON b.facid = f.facid
+    LEFT JOIN Members AS m ON b.memid = m.memid
+) AS subquery
+ON b.bookid=subquery.id
+WHERE '2012-09-14' = CAST( b.starttime AS DATE )
+   AND subquery.cost>30
 
 
 /* PART 2: SQLite
